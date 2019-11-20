@@ -120,7 +120,7 @@ public:
 		std::cout << intrinsic << std::endl << std::endl << distCoeffs << std::endl;
 
 		Mat imageUndistorted;
-		while (1)
+		for (;;) 
 		{
 			capture >> image;
 			undistort(image, imageUndistorted, intrinsic, distCoeffs);
