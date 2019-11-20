@@ -18,7 +18,9 @@ int main(int argc, char *argv[])
 
 	//webcam.capture_and_show();
 
-	webcam.calibrate();
+	//webcam.calibrate();
+	webcam.load_params();
+	webcam.print();
 	
 
 	waitKey();

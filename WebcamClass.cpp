@@ -9,7 +9,7 @@ using namespace cv;
 class WebcamClass
 {
 public:
-	WebcamClass(Mat &intrinsic_, Mat& distCoeffs_, int calib_samples_ = 0, int calib_x = 4, int calib_y = 11)
+	WebcamClass(Mat &intrinsic_, Mat& distCoeffs_, int calib_samples_, int calib_x, int calib_y)
 	{
 		intrinsic = intrinsic_;
 		distCoeffs = distCoeffs_;
@@ -127,7 +127,9 @@ public:
 
 			imshow("win1", image);
 			imshow("win2", imageUndistorted);
-			waitKey(1);
+			int key = waitKey(1);
+			if (key == 27)
+				break;
 		}
 
 		capture.release();
@@ -191,6 +193,33 @@ public:
 			string img_name = to_string(i);
 			imshow(img_name, img);
 		}
+	}
+
+	void save_params()
+	{
+		FileStorage fs("../camera_params.xml", FileStorage::WRITE);
+		
+		fs << "intrinsic" << intrinsic;
+		fs << "distCoeffs" << distCoeffs;
+		
+		fs.release();
+	}
+
+	void load_params()
+	{
+		FileStorage fs("../camera_params.xml", FileStorage::READ);
+
+		fs["intrinsic"] >> intrinsic;
+		fs["distCoeffs"] >> distCoeffs;
+
+		fs.release();
+
+		calibrated = true;
+	}
+
+	void print()
+	{
+		std::cout << intrinsic << std::endl << std::endl << distCoeffs << std::endl;
 	}
 
 private:
