@@ -158,7 +158,6 @@ public:
 			return;
 		}
 
-		vector<Mat> captures;
 
 		for (;;)
 		{
@@ -219,15 +218,61 @@ public:
 
 	void print()
 	{
-		std::cout << intrinsic << std::endl << std::endl << distCoeffs << std::endl;
+		std::cout << intrinsic << std::endl 
+			<< distCoeffs << std::endl
+			<< "Calibrated camera: " << calibrated << std::endl;
 	}
 
+	void set_calibration(bool c)
+	{
+		calibrated = c;
+	}
+
+	Mat pairwise_homography()//(Mat &I1, Mat &I2)
+	{
+
+		Mat I1 = captures.at(0);
+		Mat I2 = captures.at(1);
+		// keypoints detector
+		Ptr<ORB> D = ORB::create();
+		//Ptr<AKAZE> D = AKAZE::create();
+
+		vector<KeyPoint> m1, m2;
+		Mat desc1, desc2;
+
+		D->detectAndCompute(I1, Mat(), m1, desc1);
+		D->detectAndCompute(I2, Mat(), m2, desc2);
+		
+		// simple 2-NN matcher
+		BFMatcher M(NORM_L2/*,true*/);
+
+		vector<DMatch> matches;
+		M.match(desc1, desc2, matches);
+
+		vector<Point2f> matches1, matches2;
+
+		for (int i = 0; i < matches.size(); i++) {
+			matches1.push_back(m1[matches[i].queryIdx].pt);
+			matches2.push_back(m2[matches[i].trainIdx].pt);
+		}
+
+		Mat mask; // Inliers?
+
+		return findHomography(matches1, matches2, RANSAC, 3, mask);
+
+	}
 private:
+	// general parameters
 	Mat intrinsic;
 	Mat distCoeffs;
 	bool calibrated;
 
+	// for calibration
 	int calib_samples;
 	Size board_sz;
+
+	// memory
+	vector<Mat> captures;
+
 
 };
