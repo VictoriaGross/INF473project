@@ -258,7 +258,34 @@ public:
 
 		Mat mask; // Inliers?
 
-		return findHomography(matches1, matches2, RANSAC, 3, mask);
+		Mat H = findHomography(matches1, matches2, RANSAC, 3, mask);
+		decomposeHomographyMat(H, intrinsic, R, t, n); // BUG
+
+		Mat proj1(3, 4, CV_32FC1);
+		Mat proj2(3, 4, CV_32FC1);
+		
+		for (int i = 0; i < proj1.rows; i++)
+		{
+			for (int j = 0; j < proj1.cols; j++)
+			{
+				if (i == j)
+				{
+					proj1.at<float>(i, j) = 1.0;
+				}
+				if (j < proj1.cols - 1)
+					proj2.at<float>(i, j) = R.at<float>(i, j);
+				else
+					proj2.at<float>(i, j) = t.at<float>(i, 0);
+			}
+		}
+
+		Mat points3d;
+
+		triangulatePoints(proj1, proj2, matches1, matches2, points3d);
+
+		std::cout << points3d << std::endl;
+
+		return H;
 
 	}
 private:
@@ -273,6 +300,10 @@ private:
 
 	// memory
 	vector<Mat> captures;
+
+	Mat R;
+	Mat t;
+	Mat n;
 
 
 };
