@@ -12,6 +12,9 @@ public:
 
 	// memory
 	vector<Mat> captures;
+	Mat R;
+	Mat t;
+	Mat n;
 
 	WebcamClass(Mat &intrinsic_, Mat& distCoeffs_, int calib_samples_, int calib_x, int calib_y, vector<Mat> &captures_)
 	{
@@ -241,9 +244,12 @@ public:
 
 	Mat pairwise_homography()//(Mat &I1, Mat &I2)
 	{
-
+		// recover from memory
 		Mat &I1 = captures[0];
 		Mat &I2 = captures[1];
+
+		Mat i1 = I1;
+		Mat i2 = I2;
 
 		// keypoints detector
 		Ptr<ORB> D = ORB::create();
@@ -252,10 +258,10 @@ public:
 		vector<KeyPoint> m1, m2;
 		Mat desc1, desc2;
 
-		D->detectAndCompute(I1, Mat(), m1, desc1);
-		D->detectAndCompute(I2, Mat(), m2, desc2);
+		D->detectAndCompute(i1, Mat(), m1, desc1);
+		D->detectAndCompute(i2, Mat(), m2, desc2);
 
-		// simple 2-NN matcher
+		// simple k-NN matcher
 		BFMatcher M(NORM_L2/*,true*/);
 
 		vector<DMatch> matches;
@@ -263,19 +269,15 @@ public:
 
 		vector<Point2f> matches1, matches2;
 
-		Mat H;
-
-		for (int i = 0; i < matches.size(); i++) {
+		for (int i = 0; i < matches.size(); i++) { // ad only nearest-neighbor
 			matches1.push_back(m1[matches[i].queryIdx].pt);
 			matches2.push_back(m2[matches[i].trainIdx].pt);
 		}
+		
+		Mat mask; 
+		Mat H = findHomography(matches1, matches2, RANSAC, 3, mask);
 
-		Mat mask; // Inliers?
-
-		H = findHomography(matches1, matches2, RANSAC, 3, mask);
-		//decomposeHomographyMat(H, intrinsic, R, t, noArray()); // BUG
-
-		return H;
+		//decomposeHomographyMat(H, intrinsic, R, t, noArray()); // buggg
 
 		//Mat proj1(3, 4, CV_32FC1);
 		//Mat proj2(3, 4, CV_32FC1);
@@ -295,6 +297,43 @@ public:
 		//	}
 		//}
 
+
+		//// inlier computation
+		//vector<DMatch> inliers;
+		//for (int i = 0; i < matches.size(); i++)
+		//	if (mask.at<uchar>(i, 0) != 0)
+		//		inliers.push_back(matches[i]);
+
+		//// recovering points
+
+		//vector<Point2f> cam0pnts;
+		//vector<Point2f> cam1pnts;
+		//
+		//for (int i = 0; i < inliers.size(); i++)
+		//{
+		//	cam0pnts.push_back(m1[inliers[i].queryIdx].pt);
+		//	cam1pnts.push_back(m2[inliers[i].trainIdx].pt);
+		//}
+		//// You fill them, both with the same size...
+
+		//// You can pick any of the following 2 (your choice)
+		//// cv::Mat pnts3D(1,cam0pnts.size(),CV_64FC4);
+		//Mat pnts3D(4, cam0pnts.size(), CV_64F);
+
+		//triangulatePoints(proj1, proj2, cam0pnts, cam1pnts, pnts3D);
+
+		//std::cout << pnts3D << std::endl;
+
+		return H;
+	}
+
+	
+		
+
+		//std::cout << proj1 << std::endl;
+		//std::cout << proj2 << std::endl;
+
+
 		//Mat points3d;
 
 		//triangulatePoints(proj1, proj2, matches1, matches2, points3d);
@@ -302,18 +341,18 @@ public:
 		//std::cout << points3d << std::endl;
 
 		//return H;
-	}
+	
 
-	//void mix(Mat &R, Mat &t, Mat &result)
-	//{
-	//	for (int j = 0; j < R.cols; j++)
-	//	{
-	//		for(int i = 0; i < R.rows; i++)
-	//		{
-	//		
-	//		}
-	//	}
-	//}
+	void mix(Mat &R, Mat &t, Mat &result)
+	{
+		for (int j = 0; j < R.cols; j++)
+		{
+			for(int i = 0; i < R.rows; i++)
+			{
+			
+			}
+		}
+	}
 	
 private:
 	// general parameters
@@ -324,10 +363,5 @@ private:
 	// for calibration
 	int calib_samples;
 	Size board_sz;
-
-	Mat R;
-	Mat t;
-	Mat n;
-
 
 };

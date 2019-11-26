@@ -24,14 +24,13 @@ int main(int argc, char *argv[])
 	webcam.capture_and_show(false);
 
 
-
 	Mat H = webcam.pairwise_homography();
 
-	std::cout << H << std::endl;
+	//std::cout << H << std::endl;
 
 	//webcam.calibrate();
 	//webcam.load_params();
-	webcam.print();
+	//webcam.print();
 	
 
 	waitKey();
