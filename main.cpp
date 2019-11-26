@@ -14,10 +14,16 @@ int main(int argc, char *argv[])
 	Mat intrinsic = Mat::eye(3, 3, CV_32FC1);
 	Mat distCoeffs = Mat::zeros(8, 1, CV_32FC1);
 
-	WebcamClass webcam(intrinsic, distCoeffs, 4, 4, 11);
+	vector<Mat> captures;
+
+	// dummy camera parameters
+	WebcamClass webcam(intrinsic, distCoeffs, 4, 4, 11, captures);
 	webcam.set_calibration(true);
 
-	webcam.capture_and_show();
+	// save some images
+	webcam.capture_and_show(false);
+
+
 
 	Mat H = webcam.pairwise_homography();
 

@@ -9,13 +9,21 @@ using namespace cv;
 class WebcamClass
 {
 public:
-	WebcamClass(Mat &intrinsic_, Mat& distCoeffs_, int calib_samples_, int calib_x, int calib_y)
+
+	// memory
+	vector<Mat> captures;
+
+	WebcamClass(Mat &intrinsic_, Mat& distCoeffs_, int calib_samples_, int calib_x, int calib_y, vector<Mat> &captures_)
 	{
 		intrinsic = intrinsic_;
 		distCoeffs = distCoeffs_;
 		calib_samples = calib_samples_;
 		board_sz = Size(calib_x, calib_y);
 		calibrated = false;
+		captures = captures_;
+
+		R = Mat::eye(3, 3, CV_32FC1);
+		t = Mat::zeros(3, 1, CV_32FC1);
 
 	}
 
@@ -148,7 +156,7 @@ public:
 
 	}
 
-	void capture_and_show()
+	void capture_and_show(bool show)
 	{
 		VideoCapture cap(0);
 
@@ -186,11 +194,14 @@ public:
 
 		// show captured images
 
-		for (int i = 0; i < captures.size(); i++)
+		if (show)
 		{
-			Mat img = captures[i];
-			string img_name = to_string(i);
-			imshow(img_name, img);
+			for (int i = 0; i < captures.size(); i++)
+			{
+				Mat img = captures[i];
+				string img_name = to_string(i);
+				imshow(img_name, img);
+			}
 		}
 	}
 
@@ -231,8 +242,9 @@ public:
 	Mat pairwise_homography()//(Mat &I1, Mat &I2)
 	{
 
-		Mat I1 = captures.at(0);
-		Mat I2 = captures.at(1);
+		Mat &I1 = captures[0];
+		Mat &I2 = captures[1];
+
 		// keypoints detector
 		Ptr<ORB> D = ORB::create();
 		//Ptr<AKAZE> D = AKAZE::create();
@@ -242,7 +254,7 @@ public:
 
 		D->detectAndCompute(I1, Mat(), m1, desc1);
 		D->detectAndCompute(I2, Mat(), m2, desc2);
-		
+
 		// simple 2-NN matcher
 		BFMatcher M(NORM_L2/*,true*/);
 
@@ -251,6 +263,8 @@ public:
 
 		vector<Point2f> matches1, matches2;
 
+		Mat H;
+
 		for (int i = 0; i < matches.size(); i++) {
 			matches1.push_back(m1[matches[i].queryIdx].pt);
 			matches2.push_back(m2[matches[i].trainIdx].pt);
@@ -258,36 +272,49 @@ public:
 
 		Mat mask; // Inliers?
 
-		Mat H = findHomography(matches1, matches2, RANSAC, 3, mask);
-		decomposeHomographyMat(H, intrinsic, R, t, n); // BUG
-
-		Mat proj1(3, 4, CV_32FC1);
-		Mat proj2(3, 4, CV_32FC1);
-		
-		for (int i = 0; i < proj1.rows; i++)
-		{
-			for (int j = 0; j < proj1.cols; j++)
-			{
-				if (i == j)
-				{
-					proj1.at<float>(i, j) = 1.0;
-				}
-				if (j < proj1.cols - 1)
-					proj2.at<float>(i, j) = R.at<float>(i, j);
-				else
-					proj2.at<float>(i, j) = t.at<float>(i, 0);
-			}
-		}
-
-		Mat points3d;
-
-		triangulatePoints(proj1, proj2, matches1, matches2, points3d);
-
-		std::cout << points3d << std::endl;
+		H = findHomography(matches1, matches2, RANSAC, 3, mask);
+		//decomposeHomographyMat(H, intrinsic, R, t, noArray()); // BUG
 
 		return H;
 
+		//Mat proj1(3, 4, CV_32FC1);
+		//Mat proj2(3, 4, CV_32FC1);
+
+		//for (int i = 0; i < proj1.rows; i++)
+		//{
+		//	for (int j = 0; j < proj1.cols; j++)
+		//	{
+		//		if (i == j)
+		//		{
+		//			proj1.at<float>(i, j) = 1.0;
+		//		}
+		//		if (j < proj1.cols - 1)
+		//			proj2.at<float>(i, j) = R.at<float>(i, j);
+		//		else
+		//			proj2.at<float>(i, j) = t.at<float>(i, 0);
+		//	}
+		//}
+
+		//Mat points3d;
+
+		//triangulatePoints(proj1, proj2, matches1, matches2, points3d);
+
+		//std::cout << points3d << std::endl;
+
+		//return H;
 	}
+
+	//void mix(Mat &R, Mat &t, Mat &result)
+	//{
+	//	for (int j = 0; j < R.cols; j++)
+	//	{
+	//		for(int i = 0; i < R.rows; i++)
+	//		{
+	//		
+	//		}
+	//	}
+	//}
+	
 private:
 	// general parameters
 	Mat intrinsic;
@@ -297,9 +324,6 @@ private:
 	// for calibration
 	int calib_samples;
 	Size board_sz;
-
-	// memory
-	vector<Mat> captures;
 
 	Mat R;
 	Mat t;
