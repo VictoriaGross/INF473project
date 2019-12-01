@@ -22,6 +22,8 @@ public:
 	vector<Mat>* captures;
 	Mat cameraMatrix;
 	Mat distCoeffs;
+
+	vector<string> windowNames;
 	
 	
 
@@ -34,6 +36,13 @@ public:
 	{
 		captures->clear();
 		destroyAllWindows();
+	}
+
+	void close_windows()
+	{
+		for (int i = 0; i < windowNames.size(); i++)
+			destroyWindow(windowNames[i]);
+		windowNames.clear();
 	}
 
 	// show undistorted images (needs cameraMatrix and distCoeffs filled by load_params() or calibrate_from_video(args))
@@ -112,8 +121,12 @@ public:
 			{
 				Mat img = captures->at(i);
 				string img_name = to_string(i);
+				windowNames.push_back(img_name);
 				imshow(img_name, img);
 			}
+
+			waitKey();
+			close_windows();
 		}
 	}
 
@@ -139,110 +152,99 @@ public:
 	}
 
 
-	//void print()
-	//{
-	//	std::cout << intrinsic << std::endl 
-	//		<< distCoeffs << std::endl
-	//		<< "Calibrated camera: " << calibrated << std::endl;
-	//}
+	void writeCSV(string filename, Mat m)
+	{
+		ofstream myfile;
+		myfile.open(filename.c_str());
+		myfile << cv::format(m, cv::Formatter::FMT_CSV) << std::endl;
+		myfile.close();
+	}
 
 
-	//Mat pairwise_homography()//(Mat &I1, Mat &I2)
-	//{
-	//	// recover from memory
-	//	Mat& I1 = captures[0];
-	//	Mat& I2 = captures[1];
+	void print()
+	{
+		std::cout << "Camera matrix:\n"
+			<< cameraMatrix << std::endl
+			<< "Distortion coefficients: \n"
+			<< distCoeffs << std::endl;
+	}
 
-	//	Mat i1 = I1;
-	//	Mat i2 = I2;
+	Mat points3d(Mat& i1, Mat& i2)
+	{
+		vector<KeyPoint> keypts1, keypts2;
+		Mat desc1, desc2;
+		// detect keypoints and extractORBdescriptors
+		Ptr<Feature2D>orb = ORB::create(2000);
+		orb->detectAndCompute(i1, noArray(), keypts1, desc1);
+		orb->detectAndCompute(i2, noArray(), keypts2, desc2);
+		// matching descriptors
+		Ptr<DescriptorMatcher>matcher
+			= DescriptorMatcher::create("BruteForce-Hamming");
+		vector<DMatch> matches;
+		matcher->match(desc1, desc2, matches);
 
-	//	// keypoints detector
-	//	Ptr<ORB> D = ORB::create();
-	//	//Ptr<AKAZE> D = AKAZE::create();
+		//align left and right point sets
+		vector<Point2f>leftPts, rightPts;
+		for (int i = 0; i < matches.size(); i++) 
+		{
+			// queryIdx is the "left" image
+			leftPts.push_back(keypts1[matches[i].queryIdx].pt);
+			// trainIdx is the "right" image
+			rightPts.push_back(keypts2[matches[i].trainIdx].pt);
+		}
 
-	//	vector<KeyPoint> m1, m2;
-	//	Mat desc1, desc2;
+		double focal = 1.0;
+		Point2d pp(0, 0);
+		//robustly find the Essential Matrix
+		Mat status;
+		Mat E = findEssentialMat(
+			leftPts, // points from left image
+			rightPts, // points from right image
+			focal, // camera focal length factor
+			pp, // camera principal point
+			cv::RANSAC, // use RANSAC for a robust solution
+			0.999, // desired solution confidence level
+			1.0, // point-to-epipolar-line threshold
+			status); // binary vector for inliers
 
-	//	D->detectAndCompute(i1, Mat(), m1, desc1);
-	//	D->detectAndCompute(i2, Mat(), m2, desc2);
+		Mat R = Mat::eye(3, 3, CV_64F);
+		Mat t = Mat::zeros(3, 1, CV_64F); //placeholders for rotation and translation
+		Mat mask;
+		//Find Pright camera matrix from the essential matrix
+		//Cheirality check is performed internally.
+		recoverPose(E, leftPts, rightPts, R, t, focal, pp, mask);
 
-	//	// simple k-NN matcher
-	//	BFMatcher M(NORM_L2/*,true*/);
+		Mat P1 = Mat::eye(3, 4, CV_64F);
+		Mat P2 = Mat::zeros(3, 4, CV_64F);
 
-	//	vector<DMatch> matches;
-	//	M.match(desc1, desc2, matches);
+		for (int i = 0; i < 3; i++)
+		{
+			P2.at<double>(i, 3) = t.at<double>(i, 0);
+			for (int j = 0; j < 3; j++)
+				P2.at<double>(i, j) = R.at<double>(i, j);
+		}
 
-	//	vector<Point2f> matches1, matches2;
+		Mat normLPts;
+		Mat normRPts;
 
-	//	for (int i = 0; i < matches.size(); i++) { // ad only nearest-neighbor
-	//		matches1.push_back(m1[matches[i].queryIdx].pt);
-	//		matches2.push_back(m2[matches[i].trainIdx].pt);
-	//	}
+		undistortPoints(leftPts, normLPts, cameraMatrix, Mat());
+		undistortPoints(rightPts, normRPts, cameraMatrix, Mat());
 
-	//	Mat mask;
-	//	Mat H = findHomography(matches1, matches2, RANSAC, 3, mask);
+		//the result is a set of 3D points in homogeneous coordinates (4D)
 
-	//	// inlier computation
-	//	vector<DMatch> inliers;
-	//	for (int i = 0; i < matches.size(); i++)
-	//		if (mask.at<uchar>(i, 0) != 0)
-	//			inliers.push_back(matches[i]);
-
-
-	//	for (int i = 0; i < inliers.size(); i++)
-	//	{
-	//		cam0pnts.push_back(m1[inliers[i].queryIdx].pt);
-	//		cam1pnts.push_back(m2[inliers[i].trainIdx].pt);
-	//	}
-
-	//	return H;
-	//}
-
-	//Mat projected_points(Mat H, vector<Point2f> cam0pnts, vector<Point2f> cam1pnts)
-	//{
-	//	Mat proj1(3, 4, CV_32FC1);
-	//	Mat proj2(3, 4, CV_32FC1);
-
-	//	vector<Mat> Rs, Ts;
-	//	decomposeHomographyMat(H, intrinsic, Rs, Ts, noArray()); // buggg
-
-	//	for (int i = 0; i < proj1.rows; i++)
-	//	{
-	//		for (int j = 0; j < proj1.cols; j++)
-	//		{
-	//			if (i == j)
-	//			{
-	//				proj1.at<float>(i, j) = 1.0;
-	//			}
-	//			if (j < proj1.cols - 1)
-	//				proj2.at<float>(i, j) = Rs[0].at<float>(i, j);
-	//			else
-	//				proj2.at<float>(i, j) = Ts[0].at<float>(i, 0);
-	//		}
-	//	}
-	//	
-	//	
-
-
-	//	// You fill them, both with the same size...
-
-	//	// You can pick any of the following 2 (your choice)
-	//	// cv::Mat pnts3D(1,cam0pnts.size(),CV_64FC4);
-	//	Mat pnts3D(4, cam0pnts.size(), CV_64F);
-
-	//	triangulatePoints(proj1, proj2, cam0pnts, cam1pnts, pnts3D);
-
-	//	cam0pnts.clear();
-	//	cam1pnts.clear();
-
-	//	return pnts3D;
-
-	//	
-	//	
-	//}
+		Mat pts3dHomog;
+		triangulatePoints(P1, P2, normLPts, normRPts, pts3dHomog);
+		//convert from homogeneous to 3D world coordinates
+		Mat points3d;
+		convertPointsFromHomogeneous(pts3dHomog.t(), points3d);
+		
+		return points3d;
 
 
-	// functions from samples/cpp/calibration.cpp
+	}
+
+
+	// functions from samples/cpp/calibration.cpp at https://github.com/opencv/opencv/blob/master/samples/cpp/calibration.cpp
 	double computeReprojectionErrors(
 		const vector<vector<Point3f> >& objectPoints,
 		const vector<vector<Point2f> >& imagePoints,
@@ -576,6 +578,7 @@ public:
 		capture.release();
 		destroyWindow("Image View");
 		cout << "Webcam is now calibrated\n";
+		cout << "Parameters are saved in " << outputFilename << endl;
 	}
 	
 private:
