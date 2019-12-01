@@ -11,27 +11,42 @@ using namespace cv;
 
 int main(int argc, char *argv[])
 {
-	Mat intrinsic = Mat::eye(3, 3, CV_32FC1);
-	Mat distCoeffs = Mat::zeros(8, 1, CV_32FC1);
-
 	vector<Mat> captures;
 
-	// dummy camera parameters
-	WebcamClass webcam(intrinsic, distCoeffs, 4, 4, 11, captures);
-	webcam.set_calibration(true);
+	//// dummy camera parameters
+	WebcamClass webcam(captures);
 
-	// save some images
-	webcam.capture_and_show(false);
+	//// save some images
+	webcam.capture_and_show(true);
+	webcam.clear();
+
+	webcam.load_params();
 
 
-	Mat H = webcam.pairwise_homography();
+	//webcam.calibrate_from_video(Pattern::ASYMMETRIC_CIRCLES_GRID, 4, 11, 10);
+
+	cout << webcam.cameraMatrix << endl;
+
+	webcam.show_undistorted();
+
+
+
+
+	//Mat H = webcam.pairwise_homography();
 
 	//std::cout << H << std::endl;
 
-	//webcam.calibrate();
-	//webcam.load_params();
-	//webcam.print();
+	//Mat P;
+	//P = webcam.projected_points(H, webcam.cam0pnts, webcam.cam1pnts);
+
+	//std::cout << P << std::endl;
+
+	////webcam.calibrate();
+	////webcam.load_params();
+	////webcam.print();
+	
 	
 
 	waitKey();
+	return 0;
 }
