@@ -76,24 +76,6 @@ int main(int argc, char *argv[])
 
 	//webcam.show_undistorted();
 
-
-
-
-	//Mat H = webcam.pairwise_homography();
-
-	//std::cout << H << std::endl;
-
-	//Mat P;
-	//P = webcam.projected_points(H, webcam.cam0pnts, webcam.cam1pnts);
-
-	//std::cout << P << std::endl;
-
-	////webcam.calibrate();
-	////webcam.load_params();
-	////webcam.print();
-	
-	
-
 	waitKey();
 	return 0;
 }
