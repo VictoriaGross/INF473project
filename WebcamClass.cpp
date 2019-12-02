@@ -24,6 +24,8 @@ public:
 	Mat distCoeffs;
 
 	vector<string> windowNames;
+
+	Mat T_cumul;
 	
 	
 
@@ -151,7 +153,6 @@ public:
 
 	}
 
-
 	void writeCSV(string filename, Mat m)
 	{
 		ofstream myfile;
@@ -159,7 +160,6 @@ public:
 		myfile << cv::format(m, cv::Formatter::FMT_CSV) << std::endl;
 		myfile.close();
 	}
-
 
 	void print()
 	{
