@@ -17,7 +17,9 @@ int main(int argc, char *argv[])
 	vector<Mat> captures;
 	WebcamClass webcam(captures);
 
-	cv::CommandLineParser parser(argc, argv, "{w|4|}{h|11|}{pt|acircles|}{n_calib|10|}{calibrate||}{load||}");
+	// Argument parsing & camera setup
+
+	CommandLineParser parser(argc, argv, "{w|4|}{h|11|}{pt|acircles|}{n_calib|10|}{calibrate||}{load||}");
 
 	if (parser.has("calibrate"))
 	{
@@ -49,6 +51,8 @@ int main(int argc, char *argv[])
 
 	cout << "Current camera parameters:\n";
 	webcam.print();
+
+	// Actual 3D point generation
 		
 	
 
@@ -67,10 +71,7 @@ int main(int argc, char *argv[])
 	//cout << "Stored frames:" << captures.size() << endl;
 
 
-	//Mat frame1 = captures[0];
-	//Mat frame2 = captures[1];
-	//
-	//Mat points = webcam.points3d(frame1, frame2);
+
 
 	//webcam.writeCSV("../points.csv", points);
 
