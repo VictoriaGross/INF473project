@@ -13,13 +13,14 @@ int main(int argc, char *argv[])
 {
 	Pattern pattern;
 	int w, h, n_calib;
+	bool debug;
 
 	vector<Mat> captures;
 	WebcamClass webcam(captures);
 
 	// Argument parsing & camera setup
 
-	CommandLineParser parser(argc, argv, "{w|4|}{h|11|}{pt|acircles|}{n_calib|10|}{calibrate||}{load||}");
+	CommandLineParser parser(argc, argv, "{w|4|}{h|11|}{pt|acircles|}{n_calib|10|}{calibrate||}{load||}{debug||}");
 
 	if (parser.has("calibrate"))
 	{
@@ -49,16 +50,16 @@ int main(int argc, char *argv[])
 		webcam.load_params();
 	}
 
+	if (parser.has("debug"))
+		debug = true;
+
 	cout << "Current camera parameters:\n";
 	webcam.print();
 
 	// Actual 3D point generation
-		
 	
-
-	//// save some images
-	//webcam.capture_and_show(true);
-	//webcam.clear();
+	// save some images
+	webcam.capture_and_show(true);
 
 	//webcam.load_params();
 	//webcam.print();
@@ -68,12 +69,11 @@ int main(int argc, char *argv[])
 	//
 	//webcam.capture_and_show(true);
 	//
-	//cout << "Stored frames:" << captures.size() << endl;
+	
+	cout << "Stored frames:" << captures.size() << endl;
 
-
-
-
-	//webcam.writeCSV("../points.csv", points);
+	Mat points = webcam.points3d(captures[0], captures[1], debug);
+	webcam.writeCSV("../points.csv", points);
 
 	//webcam.show_undistorted();
 

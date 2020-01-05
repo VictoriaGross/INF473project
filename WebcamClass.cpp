@@ -169,7 +169,7 @@ public:
 			<< distCoeffs << std::endl;
 	}
 
-	Mat points3d(Mat& i1, Mat& i2)
+	Mat points3d(Mat& i1, Mat& i2, bool debug)
 	{
 		vector<KeyPoint> keypts1, keypts2;
 		Mat desc1, desc2;
@@ -191,6 +191,15 @@ public:
 			leftPts.push_back(keypts1[matches[i].queryIdx].pt);
 			// trainIdx is the "right" image
 			rightPts.push_back(keypts2[matches[i].trainIdx].pt);
+		}
+
+		if (debug)
+		{
+			Mat J;
+			drawMatches(i1, keypts1, i2, keypts2, matches, J);
+			resize(J, J, Size(), 1.0, 1.0);
+			imshow("Matches", J);
+			waitKey();
 		}
 
 		double focal = 1.0;
