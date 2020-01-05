@@ -193,14 +193,7 @@ public:
 			rightPts.push_back(keypts2[matches[i].trainIdx].pt);
 		}
 
-		if (debug)
-		{
-			Mat J;
-			drawMatches(i1, keypts1, i2, keypts2, matches, J);
-			resize(J, J, Size(), 1.0, 1.0);
-			imshow("Matches", J);
-			waitKey();
-		}
+		
 
 		double focal = 1.0;
 		Point2d pp(0, 0);
@@ -222,6 +215,22 @@ public:
 		//Find Pright camera matrix from the essential matrix
 		//Cheirality check is performed internally.
 		recoverPose(E, leftPts, rightPts, R, t, focal, pp, mask);
+
+		// if debug, show matching keypoints after RANSAC
+		if (debug)
+		{
+			Mat J;
+			vector<DMatch> inliers;
+
+			for (int i = 0; i < matches.size(); i++)
+				if (mask.at<uchar>(i, 0) != 0)
+					inliers.push_back(matches[i]);
+			
+			drawMatches(i1, keypts1, i2, keypts2, inliers, J);
+			resize(J, J, Size(), 1.0, 1.0);
+			imshow("Inliers", J);
+			waitKey();
+		}
 
 		Mat P1 = Mat::eye(3, 4, CV_64F);
 		Mat P2 = Mat::zeros(3, 4, CV_64F);
