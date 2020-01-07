@@ -61,14 +61,6 @@ int main(int argc, char *argv[])
 	// save some images
 	webcam.capture_and_show(true);
 
-	//webcam.load_params();
-	//webcam.print();
-	////webcam.calibrate_from_video(Pattern::ASYMMETRIC_CIRCLES_GRID, 4, 11, 10);
-	//
-	//
-	//
-	//webcam.capture_and_show(true);
-	//
 	
 	cout << "Stored frames:" << captures.size() << endl;
 
